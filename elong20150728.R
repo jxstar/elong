@@ -16,16 +16,19 @@ library(reshape2)
 library(dplyr)
 
 
+if (F){
+  conn <- dbConnect(MySQL(), dbname = "thdata", 
+                    username="thdata_user", password="gbgj53GD2s2gy64wRT",host="121.43.197.34",port=3306)
+  #dbGetQuery(conn,"set names utf8")  #for macos
+  dbGetQuery(conn,"set names gbk") # for win
+  city=dbGetQuery(conn,"select * from simple_elong_city")
+  hotel=dbGetQuery(conn,"select * from simple_elong_hotel")
+  comment=dbGetQuery(conn,"select hotelid, created, ctype, replyed, date, csource from simple_elong_comment")
+  dbDisconnect(conn)
+  save(file="20150728 elong.Rdata",comment, hotel, city)
+}
 
-conn <- dbConnect(MySQL(), dbname = "thdata", 
-                  username="thdata_user", password="gbgj53GD2s2gy64wRT",host="121.43.197.34",port=3306)
-#dbGetQuery(conn,"set names utf8")  #for macos
-dbGetQuery(conn,"set names gbk") # for win
-city=dbGetQuery(conn,"select * from simple_elong_city")
-hotel=dbGetQuery(conn,"select * from simple_elong_hotel")
-comment=dbGetQuery(conn,"select hotelid, created, ctype, replyed, date, csource from simple_elong_comment")
-dbDisconnect(conn)
-save(file="20150728 elong.Rdata",comment, hotel, city)
+load(file="20150728 elong.Rdata")
 
 head(hotel)
 str(hotel)
@@ -65,6 +68,7 @@ for (m in monthlist){
   write.xlsx(x=smcmt,file="city-star-cmts.xlsx",sheetName = as.character(m), append = T, showNA = F)
 
 }
+
 
 
 comment=group_by(comment,cityname, star)
@@ -123,4 +127,18 @@ head(smcmt)
 write.xlsx(x=smcmt,file="month-csource-cmts.xlsx", showNA = F)
 
 
+head(hotel)
+
+hotel=group_by(hotel,city, star)
+smcmt=summarise(hotel,n())
+head(smcmt)
+names(smcmt)=c("cityname","star","numcomt")
+smcmt=melt(smcmt,id=c("cityname","star"))
+smcmt=dcast(smcmt,cityname ~ star)
+names(smcmt)=c("cityname","s0","s1","s2","s3","s4","s5")
+smcmt$tot=apply(smcmt[,2:ncol(smcmt)], 1, sum,na.rm=T)
+#str(smcmt)
+smcmt=arrange(smcmt, desc(tot))
+head(smcmt,10)
+write.xlsx(x=smcmt,file="city-star-nhotels.xlsx",sheetName = "aggregated", append = T, showNA = F)
 
