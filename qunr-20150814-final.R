@@ -28,7 +28,12 @@ if (F){
   hotel=dbGetQuery(conn,"select * from simple_qunar_hotel")
   comment=dbGetQuery(conn,"select hotelid, created, csource, city from simple_qunar_new_comment")
 
-  csres=dbSendQuery(conn," select city, star, count(*) from (select c.city, star from simple_qunar_new_comment c left join simple_qunar_hotel h on c.hotelid=h.code) as ch group by city, star")
+  #csres=dbSendQuery(conn," select city, star, count(*) from (select c.city, star from simple_qunar_new_comment c left join simple_qunar_hotel h on c.hotelid=h.code) as ch group by city, star")
+  
+  csres=dbSendQuery(conn," select city, star, count(*) from
+                    (select c.city, star from simple_qunar_new_comment c left join 
+                                              (select * from simple_qunar_hotel group by code ) h  on c.hotelid=h.code) as ch 
+                    group by city, star")
   csgroup=dbFetch(csres,-1)
   dbClearResult(csres)
   if (F)  {
@@ -69,13 +74,14 @@ table(comment$month)
 monthlist=201501:201508
 current=201508
 
-comment=left_join(comment,select(hotel,hotelid,star),by=c("hotelid"="hotelid"))
+#comment=left_join(comment,select(hotel,hotelid,star),by=c("hotelid"="hotelid"))
 #comment=left_join(select(comment,hotelid,month,ctype,csource),select(hotel,code,star,city_code,city),by=c("hotelid"="code"))
 
+#m=201501
 for (m in monthlist){
   
   mcmt=select(filter(comment, month==m),hotelid, city)
-  mcmt=left_join(select(mcmt,hotelid,city),select(hotel,hotelid,star),by=c("hotelid"="hotelid"))
+  mcmt=left_join(select(mcmt,hotelid,city),distinct(select(hotel,hotelid,star),hotelid),by=c("hotelid"="hotelid"))
   mcmt=group_by(mcmt,city, star)
   #table(mcmt$star)
   
